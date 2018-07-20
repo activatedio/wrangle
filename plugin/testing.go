@@ -3,6 +3,8 @@ package plugin
 import (
 	"reflect"
 	"testing"
+
+	"github.com/activatedio/wrangle/context"
 )
 
 type StubPlugin struct {
@@ -43,10 +45,15 @@ func TestPlugin(t *testing.T, u Plugin, expectedConfig interface{},
 var _ (Context) = (*StubContext)(nil)
 
 type StubContext struct {
+	GlobalContext *context.Context
 	NextCallCount int
 }
 
 func (self *StubContext) Next() error {
 	self.NextCallCount++
 	return nil
+}
+
+func (self *StubContext) GetGlobalContext() *context.Context {
+	return self.GlobalContext
 }

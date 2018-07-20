@@ -12,8 +12,7 @@ import (
 const DEFAULT_DELEGATE_NAME = "terraform"
 
 type Context struct {
-	Delegate string
-	Args     []string
+	Delegate *exec.Cmd
 }
 
 func NewContext(config *config.Config) (*Context, error) {
@@ -30,8 +29,21 @@ func NewContext(config *config.Config) (*Context, error) {
 		return nil, err
 	}
 
+	wd, err := os.Getwd()
+
+	if err != nil {
+		return nil, err
+	}
+
 	return &Context{
-		Delegate: p,
-		Args:     os.Args[1:],
+		Delegate: &exec.Cmd{
+			Path:   p,
+			Args:   os.Args,
+			Env:    os.Environ(),
+			Dir:    wd,
+			Stdin:  os.Stdin,
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+		},
 	}, nil
 }

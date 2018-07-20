@@ -15,10 +15,10 @@ func TestDefaultRegistry_SetGet(t *testing.T) {
 	u.Set(name, plugin)
 
 	got, ok := u.Get(name)
-	if (! ok) {
+	if !ok {
 		t.Fatalf("Get is not true for %s", name)
 	}
-	if (got != plugin) {
+	if got != plugin {
 		t.Fatalf("Wanted %v, got %v", plugin, got)
 
 	}
@@ -27,7 +27,7 @@ func TestDefaultRegistry_SetGet(t *testing.T) {
 
 	_, ok = u.Get(invalid)
 
-	if (ok) {
+	if ok {
 		t.Fatal("Get is true for %s", invalid)
 	}
 }

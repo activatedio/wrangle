@@ -1,26 +1,34 @@
 package config
 
 import (
-	"io"
-	"github.com/hashicorp/hcl"
 	"bytes"
-	"github.com/activatedio/wrangle/plugin"
-	"github.com/hashicorp/hcl/hcl/ast"
-	"fmt"
 	"errors"
+	"fmt"
+	"io"
+
+	"github.com/hashicorp/hcl"
+	"github.com/hashicorp/hcl/hcl/ast"
 )
 
 type Config struct {
 	Delegate string
-	Plugins map[string]interface{}
+	Plugins  map[string]interface{}
 }
 
 type Parser interface {
 	Parse(io.Reader) (*Config, error)
 }
 
+type Registry interface {
+	Get(name string) (WithConfig, bool)
+}
+
+type WithConfig interface {
+	GetConfig() interface{}
+}
+
 type DefaultParser struct {
-	PluginRegistry plugin.Registry
+	PluginRegistry Registry
 }
 
 func (self *DefaultParser) Parse(r io.Reader) (*Config, error) {
@@ -35,13 +43,13 @@ func (self *DefaultParser) Parse(r io.Reader) (*Config, error) {
 
 	tree, err := hcl.Parse(s)
 
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
 
 	err = hcl.DecodeObject(c, tree)
 
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
 
@@ -52,7 +60,7 @@ func (self *DefaultParser) Parse(r io.Reader) (*Config, error) {
 
 			p, ok := self.PluginRegistry.Get(name)
 
-			if (! ok) {
+			if !ok {
 				return nil, errors.New(fmt.Sprintf("Unknown plugin %s\n", name))
 			}
 

@@ -5,12 +5,16 @@ import (
 	"reflect"
 	"testing"
 
+	"os/exec"
+
 	"github.com/activatedio/wrangle/config"
 )
 
 func TestNewContext(t *testing.T) {
 
-	args := os.Args[1:]
+	wd, err := os.Getwd()
+
+	check(err)
 
 	cases := map[string]struct {
 		config   *config.Config
@@ -19,8 +23,15 @@ func TestNewContext(t *testing.T) {
 		"empty": {
 			config: &config.Config{},
 			expected: &Context{
-				Delegate: "/usr/local/bin/terraform",
-				Args:     args,
+				Delegate: &exec.Cmd{
+					Path:   "/usr/local/bin/terraform",
+					Args:   os.Args,
+					Env:    os.Environ(),
+					Dir:    wd,
+					Stdin:  os.Stdin,
+					Stdout: os.Stdout,
+					Stderr: os.Stderr,
+				},
 			},
 		},
 		"delegate": {
@@ -28,8 +39,15 @@ func TestNewContext(t *testing.T) {
 				Delegate: "/bin/ls",
 			},
 			expected: &Context{
-				Delegate: "/bin/ls",
-				Args:     args,
+				Delegate: &exec.Cmd{
+					Path:   "/bin/ls",
+					Args:   os.Args,
+					Env:    os.Environ(),
+					Dir:    wd,
+					Stdin:  os.Stdin,
+					Stdout: os.Stdout,
+					Stderr: os.Stderr,
+				},
 			},
 		},
 	}
@@ -38,7 +56,7 @@ func TestNewContext(t *testing.T) {
 
 		t.Run(k, func(t *testing.T) {
 
-			if _, err := os.Stat(v.expected.Delegate); os.IsNotExist(err) {
+			if _, err := os.Stat(v.expected.Delegate.Path); os.IsNotExist(err) {
 				t.Skipf("%s executable does not exist", v.expected.Delegate)
 			}
 
@@ -52,5 +70,11 @@ func TestNewContext(t *testing.T) {
 				t.Fatalf("Wanted %v, got %v", v.expected, got)
 			}
 		})
+	}
+}
+
+func check(err error) {
+	if err != nil {
+		panic(err)
 	}
 }

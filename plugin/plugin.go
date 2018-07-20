@@ -1,6 +1,9 @@
 package plugin
 
+import "github.com/activatedio/wrangle/context"
+
 type Context interface {
+	GetGlobalContext() *context.Context
 	Next() error
 }
 

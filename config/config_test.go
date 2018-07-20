@@ -1,19 +1,20 @@
 package config_test
 
 import (
-	"testing"
-	"strings"
-	"github.com/activatedio/wrangle/plugin"
-	"github.com/activatedio/wrangle/config"
 	"reflect"
+	"strings"
+	"testing"
+
+	"github.com/activatedio/wrangle/config"
+	"github.com/activatedio/wrangle/plugin"
 	"github.com/davecgh/go-spew/spew"
 )
 
-var _ config.Parser = (*config.DefaultParser) (nil)
+var _ config.Parser = (*config.DefaultParser)(nil)
 
 type PluginConfigA struct {
-	A string
-	B string
+	A     string
+	B     string
 	Child map[string]*PluginChildConfigA
 }
 
@@ -27,19 +28,26 @@ type PluginChildConfigA struct {
 	D string
 }
 
+type StubRegistry map[string]config.WithConfig
+
+func (self StubRegistry) Get(name string) (config.WithConfig, bool) {
+	r, ok := self[name]
+	return r, ok
+}
+
 func TestDefaultParser_Parse(t *testing.T) {
 
 	cases := map[string]struct {
-		input string
+		input    string
 		expexted interface{}
-		registry map[string]plugin.Plugin
-	} {
-		"empty":{"", &config.Config{
+		registry map[string]config.WithConfig
+	}{
+		"empty": {"", &config.Config{
 			Plugins: make(map[string]interface{}),
 		},
-			map[string]plugin.Plugin{},
+			map[string]config.WithConfig{},
 		},
-		"standard":{`
+		"standard": {`
 delegate = "test-delegate"
 plugin a {
     a = "a"
@@ -58,45 +66,45 @@ plugin b {
     f = "f"
 }
 `,
-		&config.Config{
-			Delegate: "test-delegate",
-			Plugins: map[string]interface{}{
-				"a": &PluginConfigA{
-					A: "a",
-					B: "b",
-					Child: map[string]*PluginChildConfigA{
-						"a": {
-							C: "c1",
-							D: "d1",
-						},
-						"b": {
-							C: "c2",
-							D: "d2",
+			&config.Config{
+				Delegate: "test-delegate",
+				Plugins: map[string]interface{}{
+					"a": &PluginConfigA{
+						A: "a",
+						B: "b",
+						Child: map[string]*PluginChildConfigA{
+							"a": {
+								C: "c1",
+								D: "d1",
+							},
+							"b": {
+								C: "c2",
+								D: "d2",
+							},
 						},
 					},
+					"b": &PluginConfigB{
+						E: "e",
+						F: "f",
+					},
 				},
-				"b": &PluginConfigB{
-					E: "e",
-					F: "f",
+			},
+			map[string]config.WithConfig{
+				"a": &plugin.StubPlugin{
+					Config: &PluginConfigA{},
+				},
+				"b": &plugin.StubPlugin{
+					Config: &PluginConfigB{},
 				},
 			},
 		},
-		map[string]plugin.Plugin{
-			"a": &plugin.StubPlugin{
-				Config: &PluginConfigA{},
-			},
-			"b": &plugin.StubPlugin{
-				Config: &PluginConfigB{},
-			},
-		},
-	},
 	}
 
 	for k, v := range cases {
 
-		t.Run(k, func(t *testing.T){
+		t.Run(k, func(t *testing.T) {
 
-			var r plugin.DefaultRegistry
+			var r StubRegistry
 			r = v.registry
 
 			u := &config.DefaultParser{
@@ -105,11 +113,11 @@ plugin b {
 
 			got, err := u.Parse(strings.NewReader(v.input))
 
-			if (err != nil) {
+			if err != nil {
 				t.Fatalf("Unexpected error %s", err)
 			}
 
-			if (! reflect.DeepEqual(got, v.expexted)) {
+			if !reflect.DeepEqual(got, v.expexted) {
 				t.Fatal(spew.Sprintf("Wanted %+v, got %+v", v.expexted, got))
 			}
 
@@ -117,8 +125,4 @@ plugin b {
 
 	}
 
-
-
-
 }
-
