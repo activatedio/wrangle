@@ -5,7 +5,7 @@ set -x
 # Get the version from the environment, or try to figure it out from the build tags.
 # We process the files in the same order Go does to find the last matching tag.
 if [ -z $VERSION ]; then
-    for file in $(ls version/version_*.go | sort); do
+    for file in $(ls version/version*.go | sort); do
         for tag in "$GOTAGS"; do
             if grep -q "// +build $tag" $file; then
                 VERSION=$(awk -F\" '/Version =/ { print $2; exit }' <$file)
