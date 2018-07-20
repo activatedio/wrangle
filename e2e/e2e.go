@@ -14,7 +14,7 @@ import (
 
 // Type binary represents the combination of a compiled binary
 // and a temporary working directory to run it in.
-type binary struct {
+type Binary struct {
 	binPath string
 	workDir string
 	env     []string
@@ -28,7 +28,7 @@ type binary struct {
 // cannot be found, or if an error occurs while _copying_ the fixture files,
 // this function will panic. Tests should be written to assume that this
 // function always succeeds.
-func NewBinary(binaryPath, workingDir string) *binary {
+func NewBinary(binaryPath, workingDir string) *Binary {
 	tmpDir, err := ioutil.TempDir("", "binary-e2etest")
 	if err != nil {
 		panic(err)
@@ -88,7 +88,7 @@ func NewBinary(binaryPath, workingDir string) *binary {
 		panic(err)
 	}
 
-	return &binary{
+	return &Binary{
 		binPath: binaryPath,
 		workDir: tmpDir,
 	}
@@ -96,7 +96,7 @@ func NewBinary(binaryPath, workingDir string) *binary {
 
 // AddEnv appends an entry to the environment variable table passed to any
 // commands subsequently run.
-func (b *binary) AddEnv(entry string) {
+func (b *Binary) AddEnv(entry string) {
 	b.env = append(b.env, entry)
 }
 
@@ -105,7 +105,7 @@ func (b *binary) AddEnv(entry string) {
 //
 // The returned object can be mutated by the caller to customize how the
 // process will be run, before calling Run.
-func (b *binary) Cmd(args ...string) *exec.Cmd {
+func (b *Binary) Cmd(args ...string) *exec.Cmd {
 	cmd := exec.Command(b.binPath, args...)
 	cmd.Dir = b.workDir
 	cmd.Env = os.Environ()
@@ -126,7 +126,7 @@ func (b *binary) Cmd(args ...string) *exec.Cmd {
 // This is a simple way to run Terraform for non-interactive commands
 // that don't need any special environment variables. For more complex
 // situations, use Cmd and customize the command before running it.
-func (b *binary) Run(args ...string) (stdout, stderr string, err error) {
+func (b *Binary) Run(args ...string) (stdout, stderr string, err error) {
 	cmd := b.Cmd(args...)
 	cmd.Stdin = nil
 	cmd.Stdout = &bytes.Buffer{}
@@ -139,7 +139,7 @@ func (b *binary) Run(args ...string) (stdout, stderr string, err error) {
 
 // Path returns a file path within the temporary working directory by
 // appending the given arguments as path segments.
-func (b *binary) Path(parts ...string) string {
+func (b *Binary) Path(parts ...string) string {
 	args := make([]string, len(parts)+1)
 	args[0] = b.workDir
 	args = append(args, parts...)
@@ -148,21 +148,21 @@ func (b *binary) Path(parts ...string) string {
 
 // OpenFile is a helper for easily opening a file from the working directory
 // for reading.
-func (b *binary) OpenFile(path ...string) (*os.File, error) {
+func (b *Binary) OpenFile(path ...string) (*os.File, error) {
 	flatPath := b.Path(path...)
 	return os.Open(flatPath)
 }
 
 // ReadFile is a helper for easily reading a whole file from the working
 // directory.
-func (b *binary) ReadFile(path ...string) ([]byte, error) {
+func (b *Binary) ReadFile(path ...string) ([]byte, error) {
 	flatPath := b.Path(path...)
 	return ioutil.ReadFile(flatPath)
 }
 
 // FileExists is a helper for easily testing whether a particular file
 // exists in the working directory.
-func (b *binary) FileExists(path ...string) bool {
+func (b *Binary) FileExists(path ...string) bool {
 	flatPath := b.Path(path...)
 	_, err := os.Stat(flatPath)
 	return !os.IsNotExist(err)
@@ -179,8 +179,8 @@ func (b *binary) FileExists(path ...string) bool {
 // This function is designed to run under "defer", so it doesn't actually
 // do any error handling and will leave dangling temporary files on disk
 // if any errors occur while cleaning up.
-func (b *binary) Close() {
-	os.RemoveAll(b.workDir)
+func (b *Binary) Close() {
+	//os.RemoveAll(b.workDir)
 }
 
 func GoBuild(pkgPath, tmpPrefix string) string {

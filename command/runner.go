@@ -23,6 +23,20 @@ func (self *internalContext) Next() error {
 	return self.plugins.Pop().(plugin.Plugin).Filter(self)
 }
 
+func newInternalContext(globalContext *context.Context, plugins []plugin.Plugin) *internalContext {
+
+	c := &internalContext{
+		globalContext: globalContext,
+		plugins:       stack.New(),
+	}
+
+	for i := len(plugins); i > 0; i-- {
+		c.plugins.Push(plugins[i-1])
+	}
+
+	return c
+}
+
 type runnerPlugin struct {
 }
 
@@ -35,19 +49,17 @@ func (self *runnerPlugin) Filter(c plugin.Context) error {
 	return c.GetGlobalContext().Delegate.Run()
 }
 
-type DefaultRunner []plugin.Plugin
+type DefaultRunner func(runner plugin.Plugin) plugin.Context
+
+func NewDefaultRunner(globalContext *context.Context, plugins []plugin.Plugin) DefaultRunner {
+
+	return func(runner plugin.Plugin) plugin.Context {
+		return newInternalContext(globalContext, append(plugins, runner))
+	}
+}
 
 func (self DefaultRunner) Run() error {
 
-	c := &internalContext{
-		plugins: stack.New(),
-	}
-
-	for i := len(self); i > 0; i-- {
-		c.plugins.Push(self[i-1])
-	}
-
-	c.plugins.Push(&runnerPlugin{})
-
+	c := self(&runnerPlugin{})
 	return c.Next()
 }

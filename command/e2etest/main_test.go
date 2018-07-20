@@ -41,7 +41,7 @@ func setup() func() {
 	wrangleBin = tmpFilename
 
 	return func() {
-		os.Remove(tmpFilename)
+		//os.Remove(tmpFilename)
 	}
 }
 
@@ -74,35 +74,46 @@ func TestHelperProcess(t *testing.T) {
 		args = args[:1]
 	}
 
-	fmt.Println("Output here")
 }
 */
 
 func TestRun(t *testing.T) {
 
 	cases := map[string]struct {
-	} {
-		"template-only": {},
+		verify func(t *testing.T, b *e2e.Binary, stdout string, stderr string)
+	}{
+		"template-only": {
+			func(t *testing.T, b *e2e.Binary, stdout string, stderr string) {
+				f := "main.tf"
+				if !b.FileExists(f) {
+					t.Fatalf("Expected file %s to exist", f)
+				}
+				wantStdout := `    a = "a1"
+    b = "b1"
+`
+				if wantStdout != stdout {
+					t.Fatalf("Stdout: wanted \n[%s]\n, got \n[%s]",
+						wantStdout, stdout)
+				}
+			},
+		},
 	}
 
-	for k, _ := range cases {
+	for k, v := range cases {
 
-		t.Run(k, func(*testing.T) {
+		t.Run(k, func(t *testing.T) {
 
 			fixturePath := filepath.Join("test-fixtures", k)
 			wr := e2e.NewBinary(wrangleBin, fixturePath)
 			defer wr.Close()
 
-			_, stderr, err := wr.Run()
+			stdout, stderr, err := wr.Run()
 			if err != nil {
 				t.Fatalf("unexpected init error: %s\nstderr:\n%s", err, stderr)
 			}
+
+			v.verify(t, wr, stdout, stderr)
 		})
 	}
 
-
-	//cmd := helperProcess()
-
 }
-
-

@@ -1,3 +1,4 @@
 #!/bin/sh
 
-echo 'Output'
+grep "a =" main.tf
+grep "b =" main.tf

@@ -1,5 +1,7 @@
 
 delegate = "./delegate.sh"
 
-plugin "template" {}
+plugin template {
+  data-file = "data.yml"
+}
 

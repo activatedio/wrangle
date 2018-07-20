@@ -8,7 +8,11 @@ import (
 )
 
 type StubPlugin struct {
-	Config interface{}
+	Config      interface{}
+	FilterCalls []struct {
+		Context Context
+		Error   error
+	}
 }
 
 var _ Plugin = (*StubPlugin)(nil)
@@ -18,7 +22,6 @@ func (self *StubPlugin) GetConfig() interface{} {
 }
 
 func (self *StubPlugin) Filter(c Context) error {
-
 	return nil
 }
 

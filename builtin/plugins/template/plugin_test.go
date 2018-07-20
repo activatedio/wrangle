@@ -9,6 +9,7 @@ import (
 
 	"strings"
 
+	"github.com/activatedio/wrangle/config"
 	"github.com/activatedio/wrangle/e2e"
 	"github.com/activatedio/wrangle/plugin"
 )
@@ -73,6 +74,52 @@ func TestTemplatePlugin_Filter(t *testing.T) {
 		}
 	}
 
+}
+
+func TestTemplatePlugin_Config(t *testing.T) {
+
+	plugins := map[string]config.WithConfig{
+		"template": &TemplatePlugin{},
+	}
+
+	cases := map[string]struct {
+		input    string
+		plugins  map[string]config.WithConfig
+		expected *config.Config
+	}{
+		"simple": {
+			`
+plugin template {}
+`,
+			plugins,
+			&config.Config{
+				Plugins: map[string]interface{}{
+					"template": &TemplatePluginConfig{},
+				},
+			}},
+		"with-data-file": {
+			`
+plugin template {
+	data-file = "data.yml"
+}
+`,
+			plugins,
+			&config.Config{
+				Plugins: map[string]interface{}{
+					"template": &TemplatePluginConfig{
+						DataFile: "data.yml",
+					},
+				},
+			}},
+	}
+
+	for k, v := range cases {
+
+		t.Run(k, func(t *testing.T) {
+
+			config.TestConfig(t, strings.NewReader(v.input), v.plugins, v.expected)
+		})
+	}
 }
 
 func check(err error) {

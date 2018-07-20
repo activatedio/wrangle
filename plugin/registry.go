@@ -15,4 +15,3 @@ func (self DefaultRegistry) Get(name string) (Plugin, bool) {
 func (self DefaultRegistry) Set(name string, plugin Plugin) {
 	self[name] = plugin
 }
-

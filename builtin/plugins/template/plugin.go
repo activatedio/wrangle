@@ -18,7 +18,7 @@ import (
 )
 
 type TemplatePluginConfig struct {
-	DataFile string
+	DataFile string `hcl:"data-file"`
 }
 
 type TemplatePlugin struct {

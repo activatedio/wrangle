@@ -4,7 +4,9 @@ import (
 	"os"
 
 	"github.com/activatedio/wrangle/builtin/plugins/template"
+	"github.com/activatedio/wrangle/command"
 	"github.com/activatedio/wrangle/config"
+	"github.com/activatedio/wrangle/context"
 	"github.com/activatedio/wrangle/plugin"
 )
 
@@ -13,14 +15,38 @@ func main() {
 	f, err := os.Open("wrangle.hcl")
 	defer f.Close()
 
-	// We just die hard here
 	check(err)
-	parser := &config.DefaultParser{}
 
-	_, err = parser.Parse(f)
-	//_ := buildPluginRegistry()
+	r := buildPluginRegistry()
 
-	// TODO - Handle order of plugins
+	parser := &config.DefaultParser{
+		PluginRegistry: &registryAdaptor{r},
+	}
+
+	c, err := parser.Parse(f)
+
+	check(err)
+
+	var plugins []plugin.Plugin
+
+	for k, _ := range c.Plugins {
+
+		p, ok := r.Get(k)
+
+		if !ok {
+			panic("Invalid plugin: " + k)
+		}
+
+		plugins = append(plugins, p)
+	}
+
+	context, err := context.NewContext(c)
+
+	check(err)
+
+	runner := command.NewDefaultRunner(context, plugins)
+
+	runner.Run()
 }
 
 func check(err error) {
@@ -38,4 +64,14 @@ func buildPluginRegistry() plugin.Registry {
 	}
 
 	return r
+}
+
+type registryAdaptor struct {
+	PluginRegistry plugin.Registry
+}
+
+func (self *registryAdaptor) Get(name string) (config.WithConfig, bool) {
+
+	result, ok := self.PluginRegistry.Get(name)
+	return result, ok
 }
