@@ -24,5 +24,6 @@ popd
 # for the best since we have meddled with the timestamps.
 rm -rf pkg
 make all
+chmod 777 pkg
 
 exit 0
