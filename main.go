@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 
+	"github.com/activatedio/wrangle/builtin/plugins/awsuserdata"
 	"github.com/activatedio/wrangle/builtin/plugins/template"
 	"github.com/activatedio/wrangle/command"
 	"github.com/activatedio/wrangle/config"
@@ -60,7 +61,8 @@ func buildPluginRegistry() plugin.Registry {
 	var r plugin.DefaultRegistry
 
 	r = map[string]plugin.Plugin{
-		"template": &template.TemplatePlugin{},
+		"template":      &template.TemplatePlugin{},
+		"aws-user-data": &awsuserdata.AwsUserDataPlugin{},
 	}
 
 	return r

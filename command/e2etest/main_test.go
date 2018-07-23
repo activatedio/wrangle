@@ -45,38 +45,6 @@ func setup() func() {
 	}
 }
 
-/*
-func helperProcess(s ...string) *exec.Cmd {
-	cs := []string {"-test.run=TestHelperProcess", "--"}
-	cs = append(cs, s...)
-	env := [] string {
-		"GO_WANT_HELPER_PROCESS=1",
-	}
-
-	cmd := exec.Command(os.Args[0], cs...)
-	cmd.Env = append(env, os.Environ()...)
-	return cmd
-}
-
-func TestHelperProcess(t *testing.T) {
-	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
-		return
-	}
-	defer os.Exit(0)
-
-	args := os.Args
-	for len(args) > 0 {
-		if args[0] == "--" {
-			args = args[1:]
-			break
-		}
-
-		args = args[:1]
-	}
-
-}
-*/
-
 func TestRun(t *testing.T) {
 
 	cases := map[string]struct {
@@ -95,6 +63,15 @@ func TestRun(t *testing.T) {
 					t.Fatalf("Stdout: wanted \n[%s]\n, got \n[%s]",
 						wantStdout, stdout)
 				}
+			},
+		},
+		"aws-user-data-only": {
+			func(t *testing.T, b *e2e.Binary, stdout string, stderr string) {
+				f := ".user-data.sh"
+				if !b.FileExists(f) {
+					t.Fatalf("Expected file %s to exist", f)
+				}
+				// TODO - Check some golden files here
 			},
 		},
 	}

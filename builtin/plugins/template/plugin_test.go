@@ -26,52 +26,100 @@ func TestTemplatePlugin(t *testing.T) {
 
 func TestTemplatePlugin_Filter(t *testing.T) {
 
-	b := e2e.NewBinary("", filepath.Join("test-fixtures", "simple"))
-	orig, err := os.Getwd()
-	if err != nil {
-		t.Fatal("Couldn't get current working directory")
-	}
-	os.Chdir(b.Path())
-	defer os.Chdir(orig)
+	cases := map[string]struct {
+		config *TemplatePluginConfig
+		verify func(t *testing.T, b *e2e.Binary)
+	}{
+		"simple": {
+			config: &TemplatePluginConfig{
+				DataFile: "data.yml",
+			},
+			verify: func(t *testing.T, b *e2e.Binary) {
+				name := "main.tft"
 
-	u := &TemplatePlugin{
-		Config: &TemplatePluginConfig{
-			DataFile: "data.yml",
+				if !b.FileExists(name) {
+					t.Fatalf("Expected file %s to exist", name)
+				}
+
+				bs, err := b.ReadFile("main.tf")
+				check(err)
+
+				contents := string(bs)
+
+				contains := []string{
+					"a = \"a1\"",
+					"b = \"b1\"",
+				}
+
+				for _, s := range contains {
+
+					if !strings.Contains(contents, s) {
+						t.Fatalf("main.tf does not contain [%s]", s)
+					}
+				}
+
+			},
+		},
+		"all-funcs": {
+			config: &TemplatePluginConfig{
+				DataFile: "data.yml",
+			},
+			verify: func(t *testing.T, b *e2e.Binary) {
+				name := "main.tft"
+
+				if !b.FileExists(name) {
+					t.Fatalf("Expected file %s to exist", name)
+				}
+
+				bs, err := b.ReadFile("main.tf")
+				check(err)
+
+				contents := string(bs)
+
+				contains := []string{
+					"a1 = \"b\",\"c\",\"d\"",
+				}
+
+				for _, s := range contains {
+
+					if !strings.Contains(contents, s) {
+						t.Fatalf("main.tf does not contain [%s]", s)
+					}
+				}
+
+			},
 		},
 	}
-	c := &plugin.StubContext{}
 
-	err = u.Filter(c)
+	for k, v := range cases {
+		t.Run(k, func(t *testing.T) {
+			b := e2e.NewBinary("", filepath.Join("test-fixtures", k))
+			orig, err := os.Getwd()
+			if err != nil {
+				t.Fatal("Couldn't get current working directory")
+			}
+			os.Chdir(b.Path())
+			defer os.Chdir(orig)
 
-	if err != nil {
-		t.Fatalf("Unexpected error %s", err)
-	}
+			u := &TemplatePlugin{
+				Config: v.config,
+			}
 
-	if c.NextCallCount != 1 {
-		t.Fatalf("Expected next call %d times", 1)
-	}
+			c := &plugin.StubContext{}
 
-	name := "main.tft"
+			err = u.Filter(c)
 
-	if !b.FileExists(name) {
-		t.Fatalf("Expected file %s to exist", name)
-	}
+			if err != nil {
+				t.Fatalf("Unexpected error %s", err)
+			}
 
-	bs, err := b.ReadFile("main.tf")
-	check(err)
+			if c.NextCallCount != 1 {
+				t.Fatalf("Expected next call %d times", 1)
+			}
 
-	contents := string(bs)
+			v.verify(t, b)
 
-	contains := []string{
-		"a = \"a1\"",
-		"b = \"b1\"",
-	}
-
-	for _, s := range contains {
-
-		if !strings.Contains(contents, s) {
-			t.Fatalf("main.tf does not contain [%s]", s)
-		}
+		})
 	}
 
 }
@@ -116,7 +164,6 @@ plugin template {
 	for k, v := range cases {
 
 		t.Run(k, func(t *testing.T) {
-
 			config.TestConfig(t, strings.NewReader(v.input), v.plugins, v.expected)
 		})
 	}

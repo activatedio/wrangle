@@ -1,0 +1,4 @@
+
+resource "null" {
+    a1 = {{join .a "," `"` `"`}}
+}

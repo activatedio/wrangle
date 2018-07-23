@@ -2,14 +2,13 @@ package template
 
 import (
 	"sync"
+	"text/template"
 
 	"os"
 
 	"io/ioutil"
 
 	"strings"
-
-	"html/template"
 
 	"bufio"
 
@@ -58,7 +57,9 @@ func (self *TemplatePlugin) Filter(c plugin.Context) error {
 				return err
 			}
 
-			t, err := template.ParseFiles(f.Name())
+			t, err := template.New("template").Funcs(map[string]interface{}{
+				"join": join,
+			}).ParseFiles(f.Name())
 
 			if err != nil {
 				return err
@@ -72,7 +73,7 @@ func (self *TemplatePlugin) Filter(c plugin.Context) error {
 				return err
 			}
 
-			err = t.Execute(w, d)
+			err = t.ExecuteTemplate(w, f.Name(), d)
 
 			w.Flush()
 
