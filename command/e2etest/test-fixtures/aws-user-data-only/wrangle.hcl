@@ -1,5 +1,5 @@
 
-delegate = "./delegate.sh"
-
-plugin aws-user-data {}
+executable delegate.sh {
+  plugin aws-user-data {}
+}
 

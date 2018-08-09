@@ -59,7 +59,7 @@ func Test_project(t *testing.T) {
 	}{
 		"single-map": {
 			[]interface{}{
-				map[string]interface{}{
+				map[interface{}]interface{}{
 					"a": "a1",
 				},
 			},
@@ -86,11 +86,11 @@ func Test_project(t *testing.T) {
 		},
 		"multi-map": {
 			[]interface{}{
-				map[string]interface{}{
+				map[interface{}]interface{}{
 					"a": "a1",
 					"b": "b1",
 				},
-				map[string]interface{}{
+				map[interface{}]interface{}{
 					"a": "a2",
 					"b": "b2",
 				},

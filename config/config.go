@@ -2,17 +2,22 @@ package config
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
 	"io"
+
+	"fmt"
+
+	"errors"
 
 	"github.com/hashicorp/hcl"
 	"github.com/hashicorp/hcl/hcl/ast"
 )
 
 type Config struct {
-	Delegate string
-	Plugins  map[string]interface{}
+	Executables map[string]*Executable `hcl:"executable"`
+}
+
+type Executable struct {
+	Plugins map[string]interface{}
 }
 
 type Parser interface {
@@ -34,7 +39,7 @@ type DefaultParser struct {
 func (self *DefaultParser) Parse(r io.Reader) (*Config, error) {
 
 	c := &Config{
-		Plugins: make(map[string]interface{}),
+		Executables: make(map[string]*Executable),
 	}
 
 	b := new(bytes.Buffer)
@@ -53,22 +58,29 @@ func (self *DefaultParser) Parse(r io.Reader) (*Config, error) {
 		return nil, err
 	}
 
-	for _, v := range tree.Node.(*ast.ObjectList).Items {
+	for _, ev := range tree.Node.(*ast.ObjectList).Items {
 
-		if v.Keys[0].Token.Text == "plugin" {
-			name := v.Keys[1].Token.Text
+		if ev.Keys[0].Token.Text == "executable" {
+			executableName := ev.Keys[1].Token.Text
+			executable := &Executable{
+				Plugins: make(map[string]interface{}),
+			}
+			err = hcl.DecodeObject(executable, ev.Val)
 
-			p, ok := self.PluginRegistry.Get(name)
+			for _, pv := range ev.Val.(*ast.ObjectType).List.Items {
 
-			if !ok {
-				return nil, errors.New(fmt.Sprintf("Unknown plugin %s\n", name))
+				pluginName := pv.Keys[1].Token.Text
+				p, ok := self.PluginRegistry.Get(pluginName)
+				if !ok {
+					return nil, errors.New(fmt.Sprintf("Unknown plugin %s\n", pluginName))
+				}
+				pc := p.GetConfig()
+				err = hcl.DecodeObject(pc, pv.Val)
+
+				executable.Plugins[pluginName] = pc
 			}
 
-			pc := p.GetConfig()
-			err = hcl.DecodeObject(pc, v.Val)
-
-			c.Plugins[name] = pc
-
+			c.Executables[executableName] = executable
 		}
 
 	}

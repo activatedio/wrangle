@@ -43,49 +43,53 @@ func TestDefaultParser_Parse(t *testing.T) {
 		registry map[string]config.WithConfig
 	}{
 		"empty": {"", &config.Config{
-			Plugins: make(map[string]interface{}),
+			Executables: make(map[string]*config.Executable),
 		},
 			map[string]config.WithConfig{},
 		},
-		"standard": {`
-delegate = "test-delegate"
-plugin a {
-    a = "a"
-    b = "b"
-	child a {
-		c = "c1"
-		d = "d1"
+		"standard": {` 
+executable test {
+	plugin a {
+		a = "a"
+		b = "b"
+		child a {
+			c = "c1"
+			d = "d1"
+		}
+		child b {
+			c = "c2"
+			d = "d2"
+		}
 	}
-	child b {
-		c = "c2"
-		d = "d2"
+	plugin b {
+		e = "e"
+		f = "f"
 	}
-}
-plugin b {
-    e = "e"
-    f = "f"
 }
 `,
 			&config.Config{
-				Delegate: "test-delegate",
-				Plugins: map[string]interface{}{
-					"a": &PluginConfigA{
-						A: "a",
-						B: "b",
-						Child: map[string]*PluginChildConfigA{
-							"a": {
-								C: "c1",
-								D: "d1",
+				Executables: map[string]*config.Executable{
+					"test": &config.Executable{
+						Plugins: map[string]interface{}{
+							"a": &PluginConfigA{
+								A: "a",
+								B: "b",
+								Child: map[string]*PluginChildConfigA{
+									"a": {
+										C: "c1",
+										D: "d1",
+									},
+									"b": {
+										C: "c2",
+										D: "d2",
+									},
+								},
 							},
-							"b": {
-								C: "c2",
-								D: "d2",
+							"b": &PluginConfigB{
+								E: "e",
+								F: "f",
 							},
 						},
-					},
-					"b": &PluginConfigB{
-						E: "e",
-						F: "f",
 					},
 				},
 			},

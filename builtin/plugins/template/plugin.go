@@ -58,7 +58,8 @@ func (self *TemplatePlugin) Filter(c plugin.Context) error {
 			}
 
 			t, err := template.New("template").Funcs(map[string]interface{}{
-				"join": join,
+				"join":    join,
+				"project": project,
 			}).ParseFiles(f.Name())
 
 			if err != nil {

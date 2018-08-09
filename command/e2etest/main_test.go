@@ -4,7 +4,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"syscall"
 	"testing"
+
+	"os/exec"
 
 	"github.com/activatedio/wrangle/e2e"
 )
@@ -41,17 +45,30 @@ func setup() func() {
 	wrangleBin = tmpFilename
 
 	return func() {
-		//os.Remove(tmpFilename)
+		os.Remove(tmpFilename)
 	}
 }
 
 func TestRun(t *testing.T) {
 
 	cases := map[string]struct {
-		verify func(t *testing.T, b *e2e.Binary, stdout string, stderr string)
+		delegate           string
+		expectedExitStatus int
+		verify             func(t *testing.T, b *e2e.Binary, stdout string, stderr string)
 	}{
+		"multiple-executables": {
+			delegate: "./delegate2.sh",
+			verify: func(t *testing.T, b *e2e.Binary, stdout string, stderr string) {
+				wantStdout := "2\n"
+				if wantStdout != stdout {
+					t.Fatalf("Stdout: wanted \n[%s]\n, got \n[%s]",
+						wantStdout, stdout)
+				}
+			},
+		},
 		"template-only": {
-			func(t *testing.T, b *e2e.Binary, stdout string, stderr string) {
+			delegate: "./delegate.sh",
+			verify: func(t *testing.T, b *e2e.Binary, stdout string, stderr string) {
 				f := "main.tf"
 				if !b.FileExists(f) {
 					t.Fatalf("Expected file %s to exist", f)
@@ -66,12 +83,26 @@ func TestRun(t *testing.T) {
 			},
 		},
 		"aws-user-data-only": {
-			func(t *testing.T, b *e2e.Binary, stdout string, stderr string) {
+			delegate: "./delegate.sh",
+			verify: func(t *testing.T, b *e2e.Binary, stdout string, stderr string) {
 				f := ".user-data.sh"
 				if !b.FileExists(f) {
 					t.Fatalf("Expected file %s to exist", f)
 				}
 				// TODO - Check some golden files here
+			},
+		},
+		"error-1": {
+			delegate:           "./delegate.sh",
+			expectedExitStatus: 1,
+			verify: func(t *testing.T, b *e2e.Binary, stdout string, stderr string) {
+
+				stderrWantContains := " function \"regions\" not defined"
+
+				if !strings.Contains(stderr, stderrWantContains) {
+					t.Fatalf("Wanted stderr [%s] to contain [%s]", stderr, stderrWantContains)
+				}
+
 			},
 		},
 	}
@@ -84,9 +115,21 @@ func TestRun(t *testing.T) {
 			wr := e2e.NewBinary(wrangleBin, fixturePath)
 			defer wr.Close()
 
-			stdout, stderr, err := wr.Run()
+			stdout, stderr, err := wr.Run(v.delegate)
+			fmt.Println(stdout)
 			if err != nil {
-				t.Fatalf("unexpected init error: %s\nstderr:\n%s", err, stderr)
+
+				if exiterr, ok := err.(*exec.ExitError); ok {
+					if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
+						if status.ExitStatus() != v.expectedExitStatus {
+							t.Fatalf("unexpected error: status: %d %s\nstderr:\n%s", status, err, stderr)
+						}
+					}
+				} else {
+					t.Fatalf("unexpected error: %s\nstderr:\n%s", err, stderr)
+				}
+			} else if v.expectedExitStatus != 0 {
+				t.Fatalf("Expected exit status %d but got 0", v.expectedExitStatus)
 			}
 
 			v.verify(t, wr, stdout, stderr)

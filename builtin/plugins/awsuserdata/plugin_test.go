@@ -89,12 +89,18 @@ func TestAwsUserDataPlugin_GetConfig(t *testing.T) {
 	}{
 		"simple": {
 			`
-plugin aws-user-data {}
+executable test {
+	plugin aws-user-data {}
+}
 `,
 			plugins,
 			&config.Config{
-				Plugins: map[string]interface{}{
-					"aws-user-data": &AwsUserDataPluginConfig{},
+				Executables: map[string]*config.Executable{
+					"test": {
+						Plugins: map[string]interface{}{
+							"aws-user-data": &AwsUserDataPluginConfig{},
+						},
+					},
 				},
 			}},
 	}

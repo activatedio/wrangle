@@ -40,7 +40,7 @@ func project(in []interface{}, property string) []interface{} {
 		} else if kind == reflect.Struct {
 			result = append(result, v.FieldByName(property).Interface())
 		} else if kind == reflect.Map {
-			result = append(result, v.Interface().(map[string]interface{})[property])
+			result = append(result, v.Interface().(map[interface{}]interface{})[property])
 		} else {
 			panic("Value must be a struct or map")
 		}

@@ -1,0 +1,32 @@
+{{ range $name, $region := regions }}
+
+provider "aws" {
+  access_key = "${var.access_key}"
+  secret_key = "${var.secret_key}"
+  region = "{{ $region.aws_region }}"
+  alias = "{{ $name }}"
+}
+
+module "vpc_{{ $name }}" {
+  source = "{{ $region.modules_base }}//vpc"
+  providers = {
+    aws = "aws.{{ $name }}"
+  }
+  cidr_prefix = "{{ $region.cidr_prefix }}"
+  org_name = "{{ .org_name}}"
+  name = "{{ $name }}"
+  zone_base = "{{ .zone_base }}"
+  availability_zones = [ {{ join $region.availability_zones "," `"` `"` }} ]
+  amazon_dns_enabled = "0"
+  {{ if $region.vpn }}
+  vpn = 1
+  vpn_ip_addresses = [ {{ join (project $region.vpns "ip_addresses") "," `"` `"` }} ]
+  vpn_destination_cidrs = [ {{ join (project $region.vpns "destination_cidr") "," `"` `"` }} ]
+  vpn_names = [ {{ join (project $region.vpns "name") "," `"` `"` }} ]
+  {{ else }}
+  vpn = 0
+  {{ end }}
+}
+
+{{ end }}
+

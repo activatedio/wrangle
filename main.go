@@ -3,6 +3,8 @@ package main
 import (
 	"os"
 
+	"fmt"
+
 	"github.com/activatedio/wrangle/builtin/plugins/awsuserdata"
 	"github.com/activatedio/wrangle/builtin/plugins/template"
 	"github.com/activatedio/wrangle/command"
@@ -28,9 +30,13 @@ func main() {
 
 	check(err)
 
+	context, err := context.NewContext(c)
+
+	check(err)
+
 	var plugins []plugin.Plugin
 
-	for k, _ := range c.Plugins {
+	for k, _ := range context.Executable.Plugins {
 
 		p, ok := r.Get(k)
 
@@ -41,13 +47,14 @@ func main() {
 		plugins = append(plugins, p)
 	}
 
-	context, err := context.NewContext(c)
-
-	check(err)
-
 	runner := command.NewDefaultRunner(context, plugins)
 
-	runner.Run()
+	err = runner.Run()
+
+	if err != nil {
+		os.Stderr.WriteString(fmt.Sprintf("Unexpected error:\n%s\n", err))
+		os.Exit(1)
+	}
 }
 
 func check(err error) {

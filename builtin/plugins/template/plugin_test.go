@@ -9,6 +9,10 @@ import (
 
 	"strings"
 
+	"reflect"
+
+	"errors"
+
 	"github.com/activatedio/wrangle/config"
 	"github.com/activatedio/wrangle/e2e"
 	"github.com/activatedio/wrangle/plugin"
@@ -27,67 +31,39 @@ func TestTemplatePlugin(t *testing.T) {
 func TestTemplatePlugin_Filter(t *testing.T) {
 
 	cases := map[string]struct {
-		config *TemplatePluginConfig
-		verify func(t *testing.T, b *e2e.Binary)
+		config            *TemplatePluginConfig
+		existsAndContains map[string][]string
+		err               error
 	}{
 		"simple": {
 			config: &TemplatePluginConfig{
 				DataFile: "data.yml",
 			},
-			verify: func(t *testing.T, b *e2e.Binary) {
-				name := "main.tft"
-
-				if !b.FileExists(name) {
-					t.Fatalf("Expected file %s to exist", name)
-				}
-
-				bs, err := b.ReadFile("main.tf")
-				check(err)
-
-				contents := string(bs)
-
-				contains := []string{
+			existsAndContains: map[string][]string{
+				"main.tf": []string{
 					"a = \"a1\"",
 					"b = \"b1\"",
-				}
-
-				for _, s := range contains {
-
-					if !strings.Contains(contents, s) {
-						t.Fatalf("main.tf does not contain [%s]", s)
-					}
-				}
-
+				},
 			},
 		},
 		"all-funcs": {
 			config: &TemplatePluginConfig{
 				DataFile: "data.yml",
 			},
-			verify: func(t *testing.T, b *e2e.Binary) {
-				name := "main.tft"
-
-				if !b.FileExists(name) {
-					t.Fatalf("Expected file %s to exist", name)
-				}
-
-				bs, err := b.ReadFile("main.tf")
-				check(err)
-
-				contents := string(bs)
-
-				contains := []string{
+			existsAndContains: map[string][]string{
+				"main.tf": []string{
 					"a1 = \"b\",\"c\",\"d\"",
-				}
-
-				for _, s := range contains {
-
-					if !strings.Contains(contents, s) {
-						t.Fatalf("main.tf does not contain [%s]", s)
-					}
-				}
-
+					"a2 = b,c,d",
+					"b1 = \"d1\",\"d2\"",
+				},
 			},
+		},
+		"error-1": {
+			config: &TemplatePluginConfig{
+				DataFile: "data.yml",
+			},
+			existsAndContains: map[string][]string{},
+			err:               errors.New("template: main.tft:1: function \"regions\" not defined"),
 		},
 	}
 
@@ -109,15 +85,34 @@ func TestTemplatePlugin_Filter(t *testing.T) {
 
 			err = u.Filter(c)
 
-			if err != nil {
+			if err != nil && v.err == nil {
 				t.Fatalf("Unexpected error %s", err)
+			} else if !reflect.DeepEqual(err, v.err) {
+				t.Fatalf("Expected [%+v], got [%+v]", v.err, err)
 			}
 
-			if c.NextCallCount != 1 {
+			if err == nil && c.NextCallCount != 1 {
 				t.Fatalf("Expected next call %d times", 1)
 			}
 
-			v.verify(t, b)
+			for fileName, contains := range v.existsAndContains {
+
+				if !b.FileExists(fileName) {
+					t.Fatalf("Expected file %s to exist", fileName)
+				}
+
+				bs, err := b.ReadFile("main.tf")
+				check(err)
+
+				contents := string(bs)
+
+				for _, s := range contains {
+
+					if !strings.Contains(contents, s) {
+						t.Fatalf("main.tf does not contain [%s]", s)
+					}
+				}
+			}
 
 		})
 	}
@@ -137,25 +132,37 @@ func TestTemplatePlugin_Config(t *testing.T) {
 	}{
 		"simple": {
 			`
-plugin template {}
-`,
-			plugins,
-			&config.Config{
-				Plugins: map[string]interface{}{
-					"template": &TemplatePluginConfig{},
-				},
-			}},
-		"with-data-file": {
-			`
-plugin template {
-	data-file = "data.yml"
+executable test {
+    plugin template {}
 }
 `,
 			plugins,
 			&config.Config{
-				Plugins: map[string]interface{}{
-					"template": &TemplatePluginConfig{
-						DataFile: "data.yml",
+				Executables: map[string]*config.Executable{
+					"test": {
+						Plugins: map[string]interface{}{
+							"template": &TemplatePluginConfig{},
+						},
+					},
+				},
+			}},
+		"with-data-file": {
+			`
+executable test {
+	plugin template {
+		data-file = "data.yml"
+	}
+}
+`,
+			plugins,
+			&config.Config{
+				Executables: map[string]*config.Executable{
+					"test": {
+						Plugins: map[string]interface{}{
+							"template": &TemplatePluginConfig{
+								DataFile: "data.yml",
+							},
+						},
 					},
 				},
 			}},

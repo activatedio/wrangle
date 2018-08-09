@@ -180,7 +180,7 @@ func (b *Binary) FileExists(path ...string) bool {
 // do any error handling and will leave dangling temporary files on disk
 // if any errors occur while cleaning up.
 func (b *Binary) Close() {
-	//os.RemoveAll(b.workDir)
+	os.RemoveAll(b.workDir)
 }
 
 func GoBuild(pkgPath, tmpPrefix string) string {

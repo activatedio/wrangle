@@ -5,28 +5,44 @@ import (
 
 	"os"
 
+	"errors"
+
+	"fmt"
+
+	"path/filepath"
+
 	"github.com/activatedio/wrangle/config"
 )
 
-// TODO - eventually this will come from a config
-const DEFAULT_DELEGATE_NAME = "terraform"
-
 type Context struct {
-	Delegate *exec.Cmd
+	Delegate   *exec.Cmd
+	Executable *config.Executable
 }
 
-func NewContext(config *config.Config) (*Context, error) {
+var getArgs = func() []string {
+	return os.Args
+}
 
-	p := config.Delegate
+func NewContext(c *config.Config) (*Context, error) {
 
-	if p == "" {
-		p = DEFAULT_DELEGATE_NAME
+	args := getArgs()
+
+	if len(args) < 2 {
+		return nil, errors.New("Syntax: wrangle [program name] [args]")
 	}
 
-	p, err := exec.LookPath(p)
+	executable := args[1]
+	executablePath, err := exec.LookPath(executable)
+	executableBase := filepath.Base(executable)
 
 	if err != nil {
 		return nil, err
+	}
+
+	executableConfig, ok := c.Executables[executableBase]
+
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("Executable [%s] not found in config.", executableBase))
 	}
 
 	wd, err := os.Getwd()
@@ -37,13 +53,14 @@ func NewContext(config *config.Config) (*Context, error) {
 
 	return &Context{
 		Delegate: &exec.Cmd{
-			Path:   p,
-			Args:   os.Args,
+			Path:   executablePath,
+			Args:   args[1:],
 			Env:    os.Environ(),
 			Dir:    wd,
 			Stdin:  os.Stdin,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
 		},
+		Executable: executableConfig,
 	}, nil
 }
