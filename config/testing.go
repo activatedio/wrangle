@@ -4,6 +4,8 @@ import (
 	"io"
 	"reflect"
 	"testing"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 type registry struct {
@@ -31,7 +33,7 @@ func TestConfig(t *testing.T, r io.Reader, plugins map[string]WithConfig, expect
 	check(err)
 
 	if !reflect.DeepEqual(expected, got) {
-		t.Fatalf("Expected %+v, got %+v", expected, got)
+		t.Fatalf("Expected [%s], got [%v]", spew.Sprint(expected), spew.Sprint(got))
 	}
 }
 
