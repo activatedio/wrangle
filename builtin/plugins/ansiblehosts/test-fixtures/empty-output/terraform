@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$1" != "-module=a" ]; then
+    exit 127
+fi
+
+echo "{}"
+

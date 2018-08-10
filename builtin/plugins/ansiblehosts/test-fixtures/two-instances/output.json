@@ -1,0 +1,46 @@
+{
+  "instance_fqdns": {
+    "sensitive": false,
+    "type": "list",
+    "value": [
+      "opswest0.west-int.activated.systems",
+      "opswest1.west-int.activated.systems"
+    ]
+  },
+  "instance_hostnames": {
+    "sensitive": false,
+    "type": "list",
+    "value": [
+      "opswest0",
+      "opswest1"
+    ]
+  },
+  "instance_ids": {
+    "sensitive": false,
+    "type": "list",
+    "value": [
+      "i-010bfb27c29adab1a",
+      "i-02d5e2dbeaccb6dbc"
+    ]
+  },
+  "instance_private_ips": {
+    "sensitive": false,
+    "type": "list",
+    "value": [
+      "10.7.1.82",
+      "10.7.2.44"
+    ]
+  },
+  "instance_records": {
+    "sensitive": false,
+    "type": "list",
+    "value": [
+      [
+        "10.7.1.82"
+      ],
+      [
+        "10.7.2.44"
+      ]
+    ]
+  }
+}

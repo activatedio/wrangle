@@ -1,0 +1,21 @@
+[all]
+opswest0.west-int.activated.systems ansible_host=10.7.1.82
+opswest1.west-int.activated.systems ansible_host=10.7.2.44
+buildwest0.west-int.activated.systems ansible_host=10.7.1.81
+buildwest1.west-int.activated.systems ansible_host=10.7.2.41
+
+[build]
+buildwest0.west-int.activated.systems
+buildwest1.west-int.activated.systems
+
+[one]
+opswest1.west-int.activated.systems
+buildwest1.west-int.activated.systems
+
+[ops]
+opswest0.west-int.activated.systems
+opswest1.west-int.activated.systems
+
+[zero]
+opswest0.west-int.activated.systems
+buildwest0.west-int.activated.systems

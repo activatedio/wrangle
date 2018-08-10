@@ -1,0 +1,5 @@
+#!/bin/bash
+
+module=${1:8:1}
+
+cat "$module.json"
