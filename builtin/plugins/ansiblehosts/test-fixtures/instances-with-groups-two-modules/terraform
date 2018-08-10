@@ -1,5 +1,9 @@
 #!/bin/bash
 
-module=${1:8:1}
+if [ "$1" != "output" ]; then
+    exit 127
+fi
+
+module=${2:8:1}
 
 cat "$module.json"

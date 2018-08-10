@@ -5,6 +5,7 @@ import (
 
 	"fmt"
 
+	"github.com/activatedio/wrangle/builtin/plugins/ansiblehosts"
 	"github.com/activatedio/wrangle/builtin/plugins/awsuserdata"
 	"github.com/activatedio/wrangle/builtin/plugins/template"
 	"github.com/activatedio/wrangle/command"
@@ -70,6 +71,7 @@ func buildPluginRegistry() plugin.Registry {
 	r = map[string]plugin.Plugin{
 		"template":      &template.TemplatePlugin{},
 		"aws-user-data": &awsuserdata.AwsUserDataPlugin{},
+		"ansible-hosts": &ansiblehosts.AnsibleHostsPlugin{},
 	}
 
 	return r

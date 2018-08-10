@@ -20,35 +20,6 @@ import (
 	"github.com/activatedio/wrangle/plugin"
 )
 
-var config2 = `
-
----
-instance_modules:
-  - core_import: core_import_west
-    instances: ops_instances_west
-  - core_import: core_import_west
-    instances: ns_instances_west
-groups:
-  all:
-  ops:
-    pattern: 'ops.*'
-  microservice-controller:
-    pattern: '^ops[a-z]+[0-2].*'
-  microservice-controller-west:
-    pattern: '^opswest[0-2].*'
-  microservice-client:
-    pattern: 'ops.*3.*'
-  west:
-    pattern: '.*west.*'
-  vault:
-    pattern: 'vault.*'
-  bind:
-    pattern: 'ns.*'
-  bind-west:
-    pattern: 'nswest.*'
-
-`
-
 type Group struct {
 	Pattern string
 }
@@ -101,7 +72,7 @@ func (self *AnsibleHostsPlugin) Filter(c plugin.Context) error {
 	var entries []*entry
 
 	for _, m := range conf.Modules {
-		cmd := exec.Command(p, "-module="+m, "-json")
+		cmd := exec.Command(p, "output", "-module="+m, "-json")
 		out, err := cmd.Output()
 		if err != nil {
 			return err

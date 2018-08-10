@@ -50,7 +50,7 @@ func (self *TemplatePlugin) Filter(c plugin.Context) error {
 
 			n := f.Name()
 
-			dest, err := os.Create(n[:len(n)-1])
+			dest, err := os.Create(n[:len(n)-4] + "-generated.tf")
 			defer dest.Close()
 
 			if err != nil {

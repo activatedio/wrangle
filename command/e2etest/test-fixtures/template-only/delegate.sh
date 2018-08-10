@@ -1,4 +1,4 @@
 #!/bin/sh
 
-grep "a =" main.tf
-grep "b =" main.tf
+grep "a =" main-generated.tf
+grep "b =" main-generated.tf

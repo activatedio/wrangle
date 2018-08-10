@@ -40,7 +40,7 @@ func TestTemplatePlugin_Filter(t *testing.T) {
 				DataFile: "data.yml",
 			},
 			existsAndContains: map[string][]string{
-				"main.tf": []string{
+				"main-generated.tf": []string{
 					"a = \"a1\"",
 					"b = \"b1\"",
 				},
@@ -51,7 +51,7 @@ func TestTemplatePlugin_Filter(t *testing.T) {
 				DataFile: "data.yml",
 			},
 			existsAndContains: map[string][]string{
-				"main.tf": []string{
+				"main-generated.tf": []string{
 					"a1 = \"b\",\"c\",\"d\"",
 					"a2 = b,c,d",
 					"b1 = \"d1\",\"d2\"",
@@ -101,7 +101,7 @@ func TestTemplatePlugin_Filter(t *testing.T) {
 					t.Fatalf("Expected file %s to exist", fileName)
 				}
 
-				bs, err := b.ReadFile("main.tf")
+				bs, err := b.ReadFile(fileName)
 				check(err)
 
 				contents := string(bs)

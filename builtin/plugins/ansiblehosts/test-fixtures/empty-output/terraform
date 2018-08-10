@@ -1,6 +1,10 @@
 #!/bin/bash
 
-if [ "$1" != "-module=a" ]; then
+if [ "$1" != "output" ]; then
+    exit 127
+fi
+
+if [ "$2" != "-module=a" ]; then
     exit 127
 fi
 

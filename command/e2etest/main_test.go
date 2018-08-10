@@ -69,7 +69,7 @@ func TestRun(t *testing.T) {
 		"template-only": {
 			delegate: "./delegate.sh",
 			verify: func(t *testing.T, b *e2e.Binary, stdout string, stderr string) {
-				f := "main.tf"
+				f := "main-generated.tf"
 				if !b.FileExists(f) {
 					t.Fatalf("Expected file %s to exist", f)
 				}
