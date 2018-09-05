@@ -23,13 +23,15 @@ var _ (plugin.Plugin) = (*AnsibleHostsPlugin)(nil)
 func TestTemplatePlugin_Filter(t *testing.T) {
 
 	cases := map[string]struct {
-		config *AnsibleHostsPluginConfig
-		err    error
+		config   *AnsibleHostsPluginConfig
+		noOutput bool
+		err      error
 	}{
 		"empty-output": {
 			config: &AnsibleHostsPluginConfig{
 				Modules: []string{"a"},
 			},
+			noOutput: true,
 		},
 		"two-instances": {
 			config: &AnsibleHostsPluginConfig{
@@ -37,6 +39,14 @@ func TestTemplatePlugin_Filter(t *testing.T) {
 				FqdnOutputName:    "instance_fqdns",
 				RecordsOutputName: "instance_records",
 			},
+		},
+		"two-instances-output-error": {
+			config: &AnsibleHostsPluginConfig{
+				Modules:           []string{"a"},
+				FqdnOutputName:    "instance_fqdns",
+				RecordsOutputName: "instance_records",
+			},
+			noOutput: true,
 		},
 		"instances-with-groups": {
 			config: &AnsibleHostsPluginConfig{
@@ -100,12 +110,19 @@ func TestTemplatePlugin_Filter(t *testing.T) {
 				t.Fatalf("Expected next call %d times", 1)
 			}
 
-			expected, err := ioutil.ReadFile("./reference")
-			check(err)
-			got, err := ioutil.ReadFile("./hosts")
+			if v.noOutput {
+				if _, err := os.Stat("./hosts"); !os.IsNotExist(err) {
+					t.Fatalf("Expected hosts file to not exist")
+				}
+			} else {
 
-			if !reflect.DeepEqual(got, expected) {
-				t.Fatalf("Files do not match, expected \n[%s], got \n[%s]", expected, got)
+				expected, err := ioutil.ReadFile("./reference")
+				check(err)
+				got, err := ioutil.ReadFile("./hosts")
+
+				if !reflect.DeepEqual(got, expected) {
+					t.Fatalf("Files do not match, expected \n[%s], got \n[%s]", expected, got)
+				}
 			}
 
 		})

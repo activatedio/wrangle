@@ -11,11 +11,11 @@ import (
 
 	"encoding/json"
 
-	"os"
-
 	"fmt"
 	"regexp"
 	"sort"
+
+	"os"
 
 	"github.com/activatedio/wrangle/plugin"
 )
@@ -55,11 +55,9 @@ func (self *AnsibleHostsPlugin) GetConfig() interface{} {
 
 func (self *AnsibleHostsPlugin) Filter(c plugin.Context) error {
 
-	f, err := os.Create("./hosts")
-	if err != nil {
+	if err := c.Next(); err != nil {
 		return err
 	}
-	defer f.Close()
 
 	p := c.GetGlobalContext().Delegate.Path
 
@@ -75,7 +73,7 @@ func (self *AnsibleHostsPlugin) Filter(c plugin.Context) error {
 		cmd := exec.Command(p, "output", "-module="+m, "-json")
 		out, err := cmd.Output()
 		if err != nil {
-			return err
+			continue
 		}
 		j := make(map[string]interface{})
 		err = json.Unmarshal(out, &j)
@@ -102,9 +100,17 @@ func (self *AnsibleHostsPlugin) Filter(c plugin.Context) error {
 		}
 	}
 
-	if len(entries) > 0 {
-		f.WriteString("[all]\n")
+	if len(entries) == 0 {
+		return nil
 	}
+
+	f, err := os.Create("./hosts")
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	f.WriteString("[all]\n")
 
 	for _, entry := range entries {
 		f.WriteString(fmt.Sprintf("%s ansible_host=%s\n", entry.name, entry.ip))
@@ -137,8 +143,6 @@ func (self *AnsibleHostsPlugin) Filter(c plugin.Context) error {
 
 		}
 	}
-
-	c.Next()
 
 	return nil
 }
