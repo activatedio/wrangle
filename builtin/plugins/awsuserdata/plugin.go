@@ -18,6 +18,7 @@ import (
 )
 
 type AwsUserDataPluginConfig struct {
+	Nameservers []string
 }
 
 type AwsUserDataPlugin struct {
@@ -41,6 +42,13 @@ func (self *AwsUserDataPlugin) GetConfig() interface{} {
 const USER_DATA_TEMPLATE = `#!/bin/bash
 
 set -e
+
+{{if .Config.Nameservers }}
+{{range .Config.Nameservers}}
+echo "nameserver {{.}}" >> /etc/resolvconf/resolv.conf.d/head
+{{end}}
+resolvconf -u
+{{end}}
 
 apt-get update
 apt-get install -y python
@@ -68,6 +76,7 @@ chmod 400 $sudoers_file
 type userDataData struct {
 	Username     string
 	SshPublicKey string
+	Config       *AwsUserDataPluginConfig
 }
 
 func (self *AwsUserDataPlugin) Filter(c plugin.Context) error {
@@ -100,6 +109,7 @@ func (self *AwsUserDataPlugin) Filter(c plugin.Context) error {
 	d := &userDataData{
 		Username:     user.Username,
 		SshPublicKey: strings.TrimSuffix(string(k), "\n"),
+		Config:       self.Config,
 	}
 
 	err = t.Execute(f, d)

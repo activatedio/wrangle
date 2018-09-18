@@ -2,7 +2,7 @@ package awsuserdata
 
 import (
 	"fmt"
-	user2 "os/user"
+	"os/user"
 	"testing"
 
 	"strings"
@@ -21,58 +21,95 @@ var _ (plugin.Plugin) = (*AwsUserDataPlugin)(nil)
 
 func TestTemplatePlugin_Filter(t *testing.T) {
 
-	user, err := user2.Current()
-
-	check(err)
-
-	k, err := ioutil.ReadFile(fmt.Sprintf("%s/.ssh/id_rsa.pub", user.HomeDir))
-
-	if err != nil {
-		t.Skip("SSH Key not availble for test")
+	cases := map[string]struct {
+		config      *AwsUserDataPluginConfig
+		contains    []string
+		notContains []string
+	}{
+		"simple": {
+			config: &AwsUserDataPluginConfig{},
+			notContains: []string{
+				"nameserver",
+			},
+		},
+		"with-nameservers": {
+			config: &AwsUserDataPluginConfig{
+				Nameservers: []string{"1.1.1.1", "2.2.2.2"},
+			},
+			contains: []string{
+				"nameserver 1.1.1.1",
+				"nameserver 2.2.2.2",
+			},
+		},
 	}
 
-	b := e2e.NewBinary("", filepath.Join("test-fixtures", "simple"))
-	orig, err := os.Getwd()
-	if err != nil {
-		t.Fatal("Couldn't get current working directory")
-	}
-	os.Chdir(b.Path())
-	defer os.Chdir(orig)
+	for k, v := range cases {
+		t.Run(k, func(t *testing.T) {
 
-	u := &AwsUserDataPlugin{}
-	c := &plugin.StubContext{}
+			_user, err := user.Current()
 
-	err = u.Filter(c)
+			check(err)
 
-	if err != nil {
-		t.Fatalf("Unexpected error %s", err)
-	}
+			k, err := ioutil.ReadFile(fmt.Sprintf("%s/.ssh/id_rsa.pub", _user.HomeDir))
 
-	if c.NextCallCount != 1 {
-		t.Fatalf("Expected next call %d times", 1)
-	}
+			if err != nil {
+				t.Skip("SSH Key not availble for test")
+			}
 
-	name := ".user-data.sh"
+			b := e2e.NewBinary("", filepath.Join("test-fixtures", "simple"))
+			orig, err := os.Getwd()
+			if err != nil {
+				t.Fatal("Couldn't get current working directory")
+			}
+			os.Chdir(b.Path())
+			defer os.Chdir(orig)
 
-	if !b.FileExists(name) {
-		t.Fatalf("Expected file %s to exist", name)
-	}
+			u := &AwsUserDataPlugin{
+				Config: v.config,
+			}
+			c := &plugin.StubContext{}
 
-	bs, err := b.ReadFile(name)
-	check(err)
+			err = u.Filter(c)
 
-	contents := string(bs)
+			if err != nil {
+				t.Fatalf("Unexpected error %s", err)
+			}
 
-	contains := []string{
-		fmt.Sprintf(`username=%s`, user.Username),
-		fmt.Sprintf(`ssh_public_key="%s"`, strings.TrimSuffix(string(k), "\n")),
-	}
+			if c.NextCallCount != 1 {
+				t.Fatalf("Expected next call %d times", 1)
+			}
 
-	for _, s := range contains {
+			name := ".user-data.sh"
 
-		if !strings.Contains(contents, s) {
-			t.Fatalf("main.tf does not contain [%s]", s)
-		}
+			if !b.FileExists(name) {
+				t.Fatalf("Expected file %s to exist", name)
+			}
+
+			bs, err := b.ReadFile(name)
+			check(err)
+
+			contents := string(bs)
+
+			contains := append(v.contains, []string{
+				fmt.Sprintf(`username=%s`, _user.Username),
+				fmt.Sprintf(`ssh_public_key="%s"`, strings.TrimSuffix(string(k), "\n")),
+			}...)
+
+			for _, s := range contains {
+
+				if !strings.Contains(contents, s) {
+					t.Fatalf("user-data does not contain [%s]", s)
+				}
+			}
+
+			for _, s := range v.notContains {
+
+				if strings.Contains(contents, s) {
+					t.Fatalf("user-data contains [%s]", s)
+				}
+			}
+
+		})
 	}
 
 }
@@ -88,17 +125,37 @@ func TestAwsUserDataPlugin_GetConfig(t *testing.T) {
 		expected *config.Config
 	}{
 		"simple": {
-			`
+			input: `
 executable test {
 	plugin aws-user-data {}
 }
 `,
-			plugins,
-			&config.Config{
+			plugins: plugins,
+			expected: &config.Config{
 				Executables: map[string]*config.Executable{
 					"test": {
 						Plugins: map[string]interface{}{
 							"aws-user-data": &AwsUserDataPluginConfig{},
+						},
+					},
+				},
+			}},
+		"with-nameservers": {
+			input: `
+executable test {
+	plugin aws-user-data {
+		nameservers = ["1.1.1.1", "2.2.2.2"]
+    }
+}
+`,
+			plugins: plugins,
+			expected: &config.Config{
+				Executables: map[string]*config.Executable{
+					"test": {
+						Plugins: map[string]interface{}{
+							"aws-user-data": &AwsUserDataPluginConfig{
+								Nameservers: []string{"1.1.1.1", "2.2.2.2"},
+							},
 						},
 					},
 				},
