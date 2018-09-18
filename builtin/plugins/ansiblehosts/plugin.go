@@ -91,10 +91,16 @@ func (self *AnsibleHostsPlugin) Filter(c plugin.Context) error {
 		fqdns := j[conf.FqdnOutputName].(map[string]interface{})["value"].([]interface{})
 		records := j[conf.RecordsOutputName].(map[string]interface{})["value"].([]interface{})
 
+		re := regexp.MustCompile("\\.$")
+
 		for i, fqdn := range fqdns {
 
+			nameString := fqdn.(string)
+
+			nameString = re.ReplaceAllString(nameString, "")
+
 			entries = append(entries, &entry{
-				name: fqdn.(string),
+				name: nameString,
 				ip:   records[i].([]interface{})[0].(string),
 			})
 		}

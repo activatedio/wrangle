@@ -61,6 +61,19 @@ func TestTemplatePlugin_Filter(t *testing.T) {
 				},
 			},
 		},
+		"instances-with-groups-trailing-dots": {
+			config: &AnsibleHostsPluginConfig{
+				Modules:           []string{"a"},
+				FqdnOutputName:    "instance_fqdns",
+				RecordsOutputName: "instance_records",
+				Groups: map[string]*Group{
+					"build": {"^build"},
+					"ops":   {"^ops"},
+					"zero":  {"0"},
+					"one":   {"1"},
+				},
+			},
+		},
 		"instances-with-groups-two-modules": {
 			config: &AnsibleHostsPluginConfig{
 				Modules:           []string{"a", "b"},
