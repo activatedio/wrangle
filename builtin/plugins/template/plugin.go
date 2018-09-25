@@ -8,16 +8,22 @@ import (
 
 	"io/ioutil"
 
-	"strings"
-
 	"bufio"
 
+	"strings"
+
+	"github.com/activatedio/wrangle/context"
 	"github.com/activatedio/wrangle/plugin"
 	"gopkg.in/yaml.v2"
 )
 
+type SuffixConfig struct {
+	ToSuffix string `hcl:"to-suffix"`
+}
+
 type TemplatePluginConfig struct {
-	DataFile string `hcl:"data-file"`
+	DataFile string                   `hcl:"data-file"`
+	Suffixes map[string]*SuffixConfig `hcl:"suffix"`
 }
 
 type TemplatePlugin struct {
@@ -31,7 +37,9 @@ func (self *TemplatePlugin) GetConfig() interface{} {
 	defer self.ConfigLock.Unlock()
 
 	if self.Config == nil {
-		self.Config = &TemplatePluginConfig{}
+		self.Config = &TemplatePluginConfig{
+			Suffixes: map[string]*SuffixConfig{},
+		}
 	}
 
 	return self.Config
@@ -46,11 +54,11 @@ func (self *TemplatePlugin) Filter(c plugin.Context) error {
 	}
 
 	for _, f := range files {
-		if !f.IsDir() && strings.HasSuffix(f.Name(), ".tft") {
+		if suffix, suffixConfig, ok := self.getSuffix(f.Name()); !f.IsDir() && ok {
 
 			n := f.Name()
 
-			dest, err := os.Create(n[:len(n)-4] + "-generated.tf")
+			dest, err := os.Create(n[:len(n)-len(suffix)] + suffixConfig.ToSuffix)
 			defer dest.Close()
 
 			if err != nil {
@@ -68,7 +76,7 @@ func (self *TemplatePlugin) Filter(c plugin.Context) error {
 
 			w := bufio.NewWriter(dest)
 
-			d, err := self.getData()
+			d, err := self.getData(c.GetGlobalContext())
 
 			if err != nil {
 				return err
@@ -88,7 +96,7 @@ func (self *TemplatePlugin) Filter(c plugin.Context) error {
 
 }
 
-func (self *TemplatePlugin) getData() (interface{}, error) {
+func (self *TemplatePlugin) getData(context *context.Context) (interface{}, error) {
 
 	p := self.Config.DataFile
 
@@ -106,5 +114,32 @@ func (self *TemplatePlugin) getData() (interface{}, error) {
 
 	yaml.Unmarshal(dat, &v)
 
+	for k, v2 := range context.Variables {
+		v[k] = v2
+	}
+
 	return v, nil
+}
+
+var defaultSuffixes = map[string]*SuffixConfig{
+	".tmpl": &SuffixConfig{
+		ToSuffix: "",
+	},
+}
+
+func (self *TemplatePlugin) getSuffix(name string) (string, *SuffixConfig, bool) {
+
+	suffixes := self.Config.Suffixes
+
+	if len(suffixes) == 0 {
+		suffixes = defaultSuffixes
+	}
+
+	for k, v := range suffixes {
+		if strings.HasSuffix(name, k) {
+			return k, v, true
+		}
+	}
+
+	return "", nil, false
 }

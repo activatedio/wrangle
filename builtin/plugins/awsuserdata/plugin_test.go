@@ -12,6 +12,8 @@ import (
 
 	"io/ioutil"
 
+	"errors"
+
 	"github.com/activatedio/wrangle/config"
 	"github.com/activatedio/wrangle/e2e"
 	"github.com/activatedio/wrangle/plugin"
@@ -19,18 +21,25 @@ import (
 
 var _ (plugin.Plugin) = (*AwsUserDataPlugin)(nil)
 
-func TestTemplatePlugin_Filter(t *testing.T) {
+func TestAwsUserDataPlugin_Filter(t *testing.T) {
 
 	cases := map[string]struct {
 		config      *AwsUserDataPluginConfig
+		skipUidEnv  bool
 		contains    []string
 		notContains []string
+		err         error
 	}{
 		"simple": {
 			config: &AwsUserDataPluginConfig{},
 			notContains: []string{
 				"nameserver",
 			},
+		},
+		"missing-uid-env": {
+			config:     &AwsUserDataPluginConfig{},
+			skipUidEnv: true,
+			err:        errors.New("Please specify userid via AWS_USER_DATA_UID environment variable."),
 		},
 		"with-nameservers": {
 			config: &AwsUserDataPluginConfig{
@@ -46,11 +55,18 @@ func TestTemplatePlugin_Filter(t *testing.T) {
 	for k, v := range cases {
 		t.Run(k, func(t *testing.T) {
 
+			if !v.skipUidEnv {
+				os.Setenv("AWS_USER_DATA_UID", "1234")
+				defer func() {
+					os.Unsetenv("AWS_USER_DATA_UID")
+				}()
+			}
+
 			_user, err := user.Current()
 
 			check(err)
 
-			k, err := ioutil.ReadFile(fmt.Sprintf("%s/.ssh/id_rsa.pub", _user.HomeDir))
+			key, err := ioutil.ReadFile(fmt.Sprintf("%s/.ssh/id_rsa.pub", _user.HomeDir))
 
 			if err != nil {
 				t.Skip("SSH Key not availble for test")
@@ -72,7 +88,13 @@ func TestTemplatePlugin_Filter(t *testing.T) {
 			err = u.Filter(c)
 
 			if err != nil {
-				t.Fatalf("Unexpected error %s", err)
+				if v.err == nil {
+					t.Fatalf("Unexpected error %s", err)
+				} else if v.err.Error() != err.Error() {
+					t.Fatalf("Expected error [%s], got [%s]", v.err, err)
+				} else {
+					return
+				}
 			}
 
 			if c.NextCallCount != 1 {
@@ -91,8 +113,10 @@ func TestTemplatePlugin_Filter(t *testing.T) {
 			contents := string(bs)
 
 			contains := append(v.contains, []string{
+
 				fmt.Sprintf(`username=%s`, _user.Username),
-				fmt.Sprintf(`ssh_public_key="%s"`, strings.TrimSuffix(string(k), "\n")),
+				fmt.Sprintf(`userid=%s`, "1234"),
+				fmt.Sprintf(`ssh_public_key="%s"`, strings.TrimSuffix(string(key), "\n")),
 			}...)
 
 			for _, s := range contains {

@@ -53,6 +53,7 @@ func TestRun(t *testing.T) {
 
 	cases := map[string]struct {
 		delegate           string
+		options            []string
 		expectedExitStatus int
 		verify             func(t *testing.T, b *e2e.Binary, stdout string, stderr string)
 	}{
@@ -69,12 +70,56 @@ func TestRun(t *testing.T) {
 		"template-only": {
 			delegate: "./delegate.sh",
 			verify: func(t *testing.T, b *e2e.Binary, stdout string, stderr string) {
-				f := "main-generated.tf"
+				f := "main.tf"
 				if !b.FileExists(f) {
 					t.Fatalf("Expected file %s to exist", f)
 				}
 				wantStdout := `    a = "a1"
     b = "b1"
+`
+				if wantStdout != stdout {
+					t.Fatalf("Stdout: wanted \n[%s]\n, got \n[%s]",
+						wantStdout, stdout)
+				}
+			},
+		},
+		"template-only-with-vars": {
+			options: []string{
+				"-wr_var=cs=cs1",
+				"-wr_var=ds=ds1",
+			},
+			delegate: "./delegate.sh",
+			verify: func(t *testing.T, b *e2e.Binary, stdout string, stderr string) {
+				f := "main.tf"
+				if !b.FileExists(f) {
+					t.Fatalf("Expected file %s to exist", f)
+				}
+				wantStdout := `    a = "a1"
+    b = "b1"
+    cs = "cs1"
+    ds = "ds1"
+`
+				if wantStdout != stdout {
+					t.Fatalf("Stdout: wanted \n[%s]\n, got \n[%s]",
+						wantStdout, stdout)
+				}
+			},
+		},
+		"template-only-with-vars-quoted": {
+			options: []string{
+				"-wr_var='cs=cs1'",
+				"-wr_var='ds=ds1'",
+			},
+			delegate: "./delegate.sh",
+			verify: func(t *testing.T, b *e2e.Binary, stdout string, stderr string) {
+				f := "main.tf"
+				if !b.FileExists(f) {
+					t.Fatalf("Expected file %s to exist", f)
+				}
+				wantStdout := `    a = "a1"
+    b = "b1"
+    cs = "cs1"
+    ds = "ds1"
 `
 				if wantStdout != stdout {
 					t.Fatalf("Stdout: wanted \n[%s]\n, got \n[%s]",
@@ -111,11 +156,21 @@ func TestRun(t *testing.T) {
 
 		t.Run(k, func(t *testing.T) {
 
+			os.Setenv("AWS_USER_DATA_UID", "1234")
+			defer func() {
+				os.Unsetenv("AWS_USER_DATA_UID")
+			}()
+
 			fixturePath := filepath.Join("test-fixtures", k)
 			wr := e2e.NewBinary(wrangleBin, fixturePath)
 			defer wr.Close()
 
-			stdout, stderr, err := wr.Run(v.delegate)
+			args := []string{}
+
+			args = append(args, v.options...)
+			args = append(args, v.delegate)
+
+			stdout, stderr, err := wr.Run(args...)
 			fmt.Println(stdout)
 			if err != nil {
 

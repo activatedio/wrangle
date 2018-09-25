@@ -58,6 +58,7 @@ func TestNewContext(t *testing.T) {
 			args:   []string{"wrangle", "./dummy.sh", "~/"},
 			config: _config,
 			expected: &Context{
+				Variables: map[string]string{},
 				Delegate: &exec.Cmd{
 					Path:   "./dummy.sh",
 					Args:   []string{"./dummy.sh", "~/"},
@@ -74,6 +75,7 @@ func TestNewContext(t *testing.T) {
 			args:   []string{"wrangle", "ls", "~/"},
 			config: _config,
 			expected: &Context{
+				Variables: map[string]string{},
 				Delegate: &exec.Cmd{
 					Path:   "/bin/ls",
 					Args:   []string{"ls", "~/"},
@@ -90,6 +92,7 @@ func TestNewContext(t *testing.T) {
 			args:   []string{"wrangle", "/bin/ls", "~/"},
 			config: _config,
 			expected: &Context{
+				Variables: map[string]string{},
 				Delegate: &exec.Cmd{
 					Path:   "/bin/ls",
 					Args:   []string{"/bin/ls", "~/"},
@@ -100,6 +103,46 @@ func TestNewContext(t *testing.T) {
 					Stderr: os.Stderr,
 				},
 				Executable: _config.Executables["ls"],
+			},
+		},
+		"wr-vars": {
+			args:   []string{"wrangle", "-wr_var=a=abc", "-wr_var=b=def", "./dummy.sh", "~/"},
+			config: _config,
+			expected: &Context{
+				Variables: map[string]string{
+					"a": "abc",
+					"b": "def",
+				},
+				Delegate: &exec.Cmd{
+					Path:   "./dummy.sh",
+					Args:   []string{"./dummy.sh", "~/"},
+					Env:    os.Environ(),
+					Dir:    wd,
+					Stdin:  os.Stdin,
+					Stdout: os.Stdout,
+					Stderr: os.Stderr,
+				},
+				Executable: _config.Executables["dummy.sh"],
+			},
+		},
+		"wr-vars-quoted": {
+			args:   []string{"wrangle", "-wr_var='a=abc'", "-wr_var='b=def'", "./dummy.sh", "~/"},
+			config: _config,
+			expected: &Context{
+				Variables: map[string]string{
+					"a": "abc",
+					"b": "def",
+				},
+				Delegate: &exec.Cmd{
+					Path:   "./dummy.sh",
+					Args:   []string{"./dummy.sh", "~/"},
+					Env:    os.Environ(),
+					Dir:    wd,
+					Stdin:  os.Stdin,
+					Stdout: os.Stdout,
+					Stderr: os.Stderr,
+				},
+				Executable: _config.Executables["dummy.sh"],
 			},
 		},
 		"relative-config-not-found": {
@@ -115,7 +158,7 @@ func TestNewContext(t *testing.T) {
 		"too-few-args": {
 			args:   []string{"wrangle"},
 			config: _config,
-			err:    errors.New("Syntax: wrangle [program name] [args]"),
+			err:    errors.New("Syntax: wrangle [wrangle options] [program name] [program args]"),
 		},
 		// "executable-not-found-relative
 		// "executable-not-found-absolute

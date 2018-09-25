@@ -123,7 +123,7 @@ func (b *Binary) Cmd(args ...string) *exec.Cmd {
 // Run executes the generated Terraform binary with the given arguments
 // and returns the bytes that it wrote to both stdout and stderr.
 //
-// This is a simple way to run Terraform for non-interactive commands
+// This is a tf-simple way to run Terraform for non-interactive commands
 // that don't need any special environment variables. For more complex
 // situations, use Cmd and customize the command before running it.
 func (b *Binary) Run(args ...string) (stdout, stderr string, err error) {

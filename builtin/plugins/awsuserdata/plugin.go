@@ -14,6 +14,8 @@ import (
 
 	"strings"
 
+	"errors"
+
 	"github.com/activatedio/wrangle/plugin"
 )
 
@@ -54,9 +56,10 @@ apt-get update
 apt-get install -y python
 
 username={{ .Username }}
+userid={{ .UID }}
 ssh_public_key="{{ .SshPublicKey }}"
 
-adduser $username --shell /bin/bash --disabled-password
+adduser $username --uid $userid --shell /bin/bash --disabled-password
 usermod -a -G sudo $username
 ssh_dir=/home/$username/.ssh
 ssh_authorized_keys=$ssh_dir/authorized_keys2
@@ -77,6 +80,7 @@ type userDataData struct {
 	Username     string
 	SshPublicKey string
 	Config       *AwsUserDataPluginConfig
+	UID          string
 }
 
 func (self *AwsUserDataPlugin) Filter(c plugin.Context) error {
@@ -106,8 +110,16 @@ func (self *AwsUserDataPlugin) Filter(c plugin.Context) error {
 		return err
 	}
 
+	// TODO This is a tempoaray hack until we have a better config option
+	uid := os.Getenv("AWS_USER_DATA_UID")
+
+	if uid == "" {
+		return errors.New("Please specify userid via AWS_USER_DATA_UID environment variable.")
+	}
+
 	d := &userDataData{
 		Username:     user.Username,
+		UID:          uid,
 		SshPublicKey: strings.TrimSuffix(string(k), "\n"),
 		Config:       self.Config,
 	}

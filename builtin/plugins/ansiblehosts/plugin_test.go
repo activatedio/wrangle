@@ -170,7 +170,7 @@ executable test {
 					},
 				},
 			}},
-		"simple": {
+		"tf-simple": {
 			`
 executable test {
     plugin ansible-hosts {

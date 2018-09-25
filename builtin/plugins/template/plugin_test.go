@@ -14,6 +14,7 @@ import (
 	"errors"
 
 	"github.com/activatedio/wrangle/config"
+	"github.com/activatedio/wrangle/context"
 	"github.com/activatedio/wrangle/e2e"
 	"github.com/activatedio/wrangle/plugin"
 )
@@ -22,7 +23,9 @@ var _ (plugin.Plugin) = (*TemplatePlugin)(nil)
 
 func TestTemplatePlugin(t *testing.T) {
 
-	plugin.TestPlugin(t, &TemplatePlugin{}, &TemplatePluginConfig{},
+	plugin.TestPlugin(t, &TemplatePlugin{}, &TemplatePluginConfig{
+		Suffixes: map[string]*SuffixConfig{},
+	},
 		func(c interface{}) {
 			c.(*TemplatePluginConfig).DataFile = "foo"
 		})
@@ -32,12 +35,44 @@ func TestTemplatePlugin_Filter(t *testing.T) {
 
 	cases := map[string]struct {
 		config            *TemplatePluginConfig
+		variables         map[string]string
 		existsAndContains map[string][]string
 		err               error
 	}{
-		"simple": {
+		"tmpl-simple": {
 			config: &TemplatePluginConfig{
 				DataFile: "data.yml",
+			},
+			existsAndContains: map[string][]string{
+				"main.txt": []string{
+					"a = \"a1\"",
+					"b = \"b1\"",
+				},
+			},
+		},
+		"tmpl-variables": {
+			config: &TemplatePluginConfig{
+				DataFile: "data.yml",
+			},
+			variables: map[string]string{
+				"c": "c1",
+				"d": "d1",
+			},
+			existsAndContains: map[string][]string{
+				"main.txt": []string{
+					"a = \"a1\"",
+					"b = \"b1\"",
+					"c = \"c1\"",
+					"d = \"d1\"",
+				},
+			},
+		},
+		"tf-simple": {
+			config: &TemplatePluginConfig{
+				DataFile: "data.yml",
+				Suffixes: map[string]*SuffixConfig{
+					".tft": &SuffixConfig{"-generated.tf"},
+				},
 			},
 			existsAndContains: map[string][]string{
 				"main-generated.tf": []string{
@@ -46,9 +81,12 @@ func TestTemplatePlugin_Filter(t *testing.T) {
 				},
 			},
 		},
-		"all-funcs": {
+		"tf-all-funcs": {
 			config: &TemplatePluginConfig{
 				DataFile: "data.yml",
+				Suffixes: map[string]*SuffixConfig{
+					".tft": &SuffixConfig{"-generated.tf"},
+				},
 			},
 			existsAndContains: map[string][]string{
 				"main-generated.tf": []string{
@@ -58,9 +96,12 @@ func TestTemplatePlugin_Filter(t *testing.T) {
 				},
 			},
 		},
-		"error-1": {
+		"tf-error-1": {
 			config: &TemplatePluginConfig{
 				DataFile: "data.yml",
+				Suffixes: map[string]*SuffixConfig{
+					".tft": &SuffixConfig{"-generated.tf"},
+				},
 			},
 			existsAndContains: map[string][]string{},
 			err:               errors.New("template: main.tft:1: function \"regions\" not defined"),
@@ -81,7 +122,11 @@ func TestTemplatePlugin_Filter(t *testing.T) {
 				Config: v.config,
 			}
 
-			c := &plugin.StubContext{}
+			c := &plugin.StubContext{
+				GlobalContext: &context.Context{
+					Variables: v.variables,
+				},
+			}
 
 			err = u.Filter(c)
 
@@ -130,7 +175,7 @@ func TestTemplatePlugin_Config(t *testing.T) {
 		plugins  map[string]config.WithConfig
 		expected *config.Config
 	}{
-		"simple": {
+		"tf-simple": {
 			`
 executable test {
     plugin template {}
@@ -141,16 +186,21 @@ executable test {
 				Executables: map[string]*config.Executable{
 					"test": {
 						Plugins: map[string]interface{}{
-							"template": &TemplatePluginConfig{},
+							"template": &TemplatePluginConfig{
+								Suffixes: map[string]*SuffixConfig{},
+							},
 						},
 					},
 				},
 			}},
-		"with-data-file": {
+		"with-data-file-and-one-suffix": {
 			`
 executable test {
 	plugin template {
 		data-file = "data.yml"
+		suffix ".tft" {
+			to-suffix = "-generated.tf"
+		}
 	}
 }
 `,
@@ -161,6 +211,39 @@ executable test {
 						Plugins: map[string]interface{}{
 							"template": &TemplatePluginConfig{
 								DataFile: "data.yml",
+								Suffixes: map[string]*SuffixConfig{
+									".tft": &SuffixConfig{
+										ToSuffix: "-generated.tf",
+									},
+								},
+							},
+						},
+					},
+				},
+			}},
+		"with-data-file-and-two-suffixes": {
+			`
+executable test {
+	plugin template {
+		data-file = "data.yml"
+		suffix ".tft" {
+			to-suffix = "-generated.tf"
+		}
+	}
+}
+`,
+			plugins,
+			&config.Config{
+				Executables: map[string]*config.Executable{
+					"test": {
+						Plugins: map[string]interface{}{
+							"template": &TemplatePluginConfig{
+								DataFile: "data.yml",
+								Suffixes: map[string]*SuffixConfig{
+									".tft": &SuffixConfig{
+										ToSuffix: "-generated.tf",
+									},
+								},
 							},
 						},
 					},

@@ -15,12 +15,12 @@ func Test_join(t *testing.T) {
 		"empty": {
 			sepprefixsuffix: []string{","},
 		},
-		"simple": {
+		"tf-simple": {
 			in:              []interface{}{"1", "2", "3"},
 			sepprefixsuffix: []string{","},
 			expected:        "1,2,3",
 		},
-		"simple-prefix-suffixed": {
+		"tf-simple-prefix-suffixed": {
 			in:              []interface{}{"1", "2", "3"},
 			sepprefixsuffix: []string{",", "\"", "\""},
 			expected:        `"1","2","3"`,
@@ -75,7 +75,7 @@ func Test_project(t *testing.T) {
 			"A",
 			[]interface{}{"a1"},
 		},
-		"simple-struct-ptr": {
+		"tf-simple-struct-ptr": {
 			[]interface{}{
 				&simpleStruct{
 					A: "a1",
