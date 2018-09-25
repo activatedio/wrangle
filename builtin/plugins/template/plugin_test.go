@@ -67,6 +67,19 @@ func TestTemplatePlugin_Filter(t *testing.T) {
 				},
 			},
 		},
+		"tmpl-variables-no-data-file": {
+			config: &TemplatePluginConfig{},
+			variables: map[string]string{
+				"c": "c1",
+				"d": "d1",
+			},
+			existsAndContains: map[string][]string{
+				"main.txt": []string{
+					"c = \"c1\"",
+					"d = \"d1\"",
+				},
+			},
+		},
 		"tf-simple": {
 			config: &TemplatePluginConfig{
 				DataFile: "data.yml",

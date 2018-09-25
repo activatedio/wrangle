@@ -98,21 +98,20 @@ func (self *TemplatePlugin) Filter(c plugin.Context) error {
 
 func (self *TemplatePlugin) getData(context *context.Context) (interface{}, error) {
 
-	p := self.Config.DataFile
-
-	if p == "" {
-		return new(interface{}), nil
-	}
-
-	dat, err := ioutil.ReadFile(p)
-
-	if err != nil {
-		return nil, err
-	}
-
 	v := make(map[string]interface{})
 
-	yaml.Unmarshal(dat, &v)
+	p := self.Config.DataFile
+
+	if p != "" {
+
+		dat, err := ioutil.ReadFile(p)
+
+		if err != nil {
+			return nil, err
+		}
+
+		yaml.Unmarshal(dat, &v)
+	}
 
 	for k, v2 := range context.Variables {
 		v[k] = v2
