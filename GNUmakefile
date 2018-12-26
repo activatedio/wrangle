@@ -52,6 +52,6 @@ vet:
 	fi
 
 tools:
-	go get -u -v $(GOTOOLS)
+	GO111MODULE=off go get -u -v $(GOTOOLS)
 
 .PHONY: all ci bin dev dist cov test cover format vet tools
