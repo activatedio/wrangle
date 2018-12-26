@@ -20,8 +20,8 @@ GIT_DESCRIBE="$(git describe --tags --always)"
 GIT_IMPORT="github.com/activatedio/wrangle/version"
 
 # Determine the arch/os combos we're building for
-XC_ARCH=${XC_ARCH:-"386 amd64 arm"}
-XC_OS=${XC_OS:-"solaris darwin freebsd linux windows"}
+XC_ARCH=${XC_ARCH:-"amd64"}
+XC_OS=${XC_OS:-"solaris darwin freebsd linux"}
 
 # Delete the old dir
 echo "==> Removing old directory..."
@@ -30,7 +30,7 @@ rm -rf pkg/*
 mkdir -p bin/
 
 # If it's dev mode, only build for ourself
-if [ "${CONSUL_DEV}x" != "x" ]; then
+if [ "${WRANGLE_DEV}x" != "x" ]; then
     XC_OS=$(go env GOOS)
     XC_ARCH=$(go env GOARCH)
 fi
@@ -38,7 +38,8 @@ fi
 # Build!
 echo "==> Building..."
 "`which gox`" \
-    -osarch="linux/amd64 linux/arm" \
+    -os="${XC_OS}" \
+    -arch="${XC_ARCH}" \
     -ldflags "-X ${GIT_IMPORT}.GitCommit='${GIT_COMMIT}${GIT_DIRTY}' -X ${GIT_IMPORT}.GitDescribe='${GIT_DESCRIBE}'" \
     -output "pkg/{{.OS}}_{{.Arch}}/wrangle" \
     -tags="${GOTAGS}" \
@@ -62,7 +63,7 @@ for F in $(find ${DEV_PLATFORM} -mindepth 1 -maxdepth 1 -type f); do
     cp ${F} ${MAIN_GOPATH}/bin/
 done
 
-if [ "${CONSUL_DEV}x" = "x" ]; then
+if [ "${WRANGLE_DEV}x" = "x" ]; then
     # Zip and copy to the dist dir
     echo "==> Packaging..."
     for PLATFORM in $(find ./pkg -mindepth 1 -maxdepth 1 -type d); do
