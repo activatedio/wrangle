@@ -1,6 +1,6 @@
 FROM ubuntu:xenial
 
-ENV GOVERSION 1.9
+ENV GOVERSION 1.11.4
 
 RUN apt-get update -y && \
     apt-get install --no-install-recommends -y -q \
