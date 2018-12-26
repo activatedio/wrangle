@@ -2,8 +2,9 @@
 #
 # This script builds the application from source for multiple platforms.
 set -e
+set -x
 
-export CGO_ENABLED=0
+#export CGO_ENABLED=0
 
 # Get the parent directory of where this script is.
 SOURCE="${BASH_SOURCE[0]}"
@@ -35,7 +36,7 @@ if [ "${WRANGLE_DEV}x" != "x" ]; then
     XC_ARCH=$(go env GOARCH)
 fi
 
-go get ...
+go mod tidy
 
 # Build!
 echo "==> Building..."
