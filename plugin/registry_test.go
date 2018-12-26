@@ -28,6 +28,6 @@ func TestDefaultRegistry_SetGet(t *testing.T) {
 	_, ok = u.Get(invalid)
 
 	if ok {
-		t.Fatal("Get is true for %s", invalid)
+		t.Fatalf("Get is true for %s", invalid)
 	}
 }

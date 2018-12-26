@@ -170,7 +170,7 @@ func TestNewContext(t *testing.T) {
 
 			if v.expected != nil {
 				if _, err := os.Stat(v.expected.Delegate.Path); os.IsNotExist(err) {
-					t.Skipf("%s executable does not exist", v.expected.Delegate)
+					t.Skipf("%v executable does not exist", v.expected.Delegate)
 				}
 			}
 
