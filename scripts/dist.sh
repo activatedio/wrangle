@@ -37,7 +37,7 @@ fi
 # Do a hermetic build inside a Docker container.
 if [ -z $NOBUILD ]; then
     docker build -t activatedio/wrangle-builder scripts/wrangle-builder/
-    docker run --rm -e "GOTAGS=$GOTAGS" -v "$(pwd)":/gopath/src/github.com/activatedio/wrangle activatedio/wrangle-builder ./scripts/dist_build.sh
+    docker run --rm -e "GOTAGS=$GOTAGS" -v "$(pwd)":/build activatedio/wrangle-builder ./scripts/dist_build.sh
 fi
 
 # Zip all the files.

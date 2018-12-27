@@ -26,4 +26,4 @@ ENV GOROOT /goroot
 ENV PATH $GOROOT/bin:$GOPATH/bin:$PATH
 
 RUN mkdir -p $GOPATH/src/github.com/activatedio/wrangle
-WORKDIR $GOPATH/src/github.com/activatedio/wrangle
+WORKDIR /build

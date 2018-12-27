@@ -36,8 +36,6 @@ if [ "${WRANGLE_DEV}x" != "x" ]; then
     XC_ARCH=$(go env GOARCH)
 fi
 
-go mod tidy
-
 # Build!
 echo "==> Building..."
 "`which gox`" \
